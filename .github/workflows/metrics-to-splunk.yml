@@ -1,0 +1,41 @@
+name: Splunk Observability CI/CD monitoring
+
+on:
+  workflow_call:
+    inputs:
+      github_repository:
+        required: true
+        type: string
+      github_workflow:
+        required: true
+        type: string
+      job_status:
+        required: true
+        type: string
+    secrets:
+      api_token:
+        required: true
+
+env:
+  ENDPOINT: "https://ingest.eu0.signalfx.com/v2/datapoint"
+
+jobs:
+  notify_splunk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Splunk - Workflow Completed
+        if: always()
+        run: |
+          curl -X POST "$ENDPOINT" \
+          -H "Content-Type: application/json" \
+          -H "X-SF-TOKEN: ${{ secrets.api_token }}" \
+          -d '{
+                "gauge": [
+                    {
+                        "metric": "github_workflow",
+                        "dimensions": { "repository": "${{ inputs.github_repository }}", "workflow": "${{ inputs.github_workflow }}", "status": "${{ inputs.job_status }}" },
+                        "value": "1"
+                    }
+                ]
+              }'
